@@ -45,7 +45,13 @@ namespace ItsStardewTime
         public bool AnyCutscenePauses = true;
         public bool LockMonsters = true;
         public bool EnableVotePause = true;
-        public double VoteThreshold = 1.0;
+
+        public double VoteThresholdPercent
+        {
+            get;
+            set;
+        } = 1.0;
+        
         public TimeSpeedMode TimeSpeedMode = TimeSpeedMode.Average;
         public bool RelativeTimeSpeed = true;
 
@@ -117,6 +123,8 @@ namespace ItsStardewTime
                 field.SetValue(this, field.GetValue(other));
             }
         }
+
+        public double GetVoteThresholdCount(int playerCount) => Math.Ceiling(VoteThresholdPercent * playerCount);
 
         /*********
          ** Private methods

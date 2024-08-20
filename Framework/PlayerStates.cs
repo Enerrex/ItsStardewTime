@@ -436,7 +436,7 @@ namespace ItsStardewTime.Framework
                         (
                             Game1.getFarmer(playerId).Name,
                             voted_yes,
-                            Math.Ceiling(_config.VoteThreshold * _playerStates.Count)
+                            _config.GetVoteThresholdCount(_playerStates.Count)
                         ),
                         Messages.VoteUpdateMessage,
                         new[] { _manifest.UniqueID }
@@ -449,7 +449,7 @@ namespace ItsStardewTime.Framework
                             (
                                 Game1.getFarmer(playerId).Name,
                                 voted_yes,
-                                Math.Ceiling(_config.VoteThreshold * _playerStates.Count)
+                                _config.GetVoteThresholdCount(_playerStates.Count)
                             )
                         );
                     }
@@ -462,7 +462,7 @@ namespace ItsStardewTime.Framework
                         (
                             Game1.getFarmer(playerId).Name,
                             voted_yes,
-                            Math.Ceiling(_config.VoteThreshold * _playerStates.Count)
+                            _config.GetVoteThresholdCount(_playerStates.Count)
                         ),
                         Messages.VoteUpdateMessage,
                         new[] { _manifest.UniqueID }
@@ -475,7 +475,7 @@ namespace ItsStardewTime.Framework
                             (
                                 Game1.getFarmer(playerId).Name,
                                 voted_yes,
-                                Math.Ceiling(_config.VoteThreshold * _playerStates.Count)
+                                _config.GetVoteThresholdCount(_playerStates.Count)
                             )
                         );
                     }
@@ -715,7 +715,7 @@ namespace ItsStardewTime.Framework
                 }
             }
 
-            pause_vote_succeeded = pause_voted_count >= Math.Ceiling(_config.VoteThreshold * _playerStates.Count);
+            pause_vote_succeeded = pause_voted_count >= _config.GetVoteThresholdCount(_playerStates.Count);
 
             if (_freezeOverride != null)
             {
