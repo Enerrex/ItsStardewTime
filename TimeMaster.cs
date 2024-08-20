@@ -689,7 +689,7 @@ namespace ItsStardewTime
                         Where(mode => !Enum.Parse<PauseMode>(mode).IsDeprecated()).
                         ToArray(),
                     formatAllowedValue: (s) => Helper.Translation.Get
-                        ($"TimeController.Config.multiplayer-host-pause-mode.{s}")
+                        ($"config.multiplayer-host-pause-mode.{s}")
                 );
                 config_menu.AddBoolOption
                 (
@@ -714,6 +714,17 @@ namespace ItsStardewTime
                     tooltip: I18n.Config_MultiplayerHostEnableVotePause_Desc,
                     getValue: () => TimeController.Config.EnableVotePause,
                     setValue: value => TimeController.Config.EnableVotePause = value
+                );
+                config_menu.AddNumberOption
+                (
+                    mod: ModManifest,
+                    name: I18n.Config_MultiplayerHostVoteThreshold_Name,
+                    tooltip: I18n.Config_MultiplayerHostVoteThreshold_Desc,
+                    getValue: () => (float)TimeController.Config.VoteThreshold,
+                    setValue: value => TimeController.Config.VoteThreshold = value,
+                    formatValue: value => value.ToString("P0"),
+                    min: 0,
+                    max: 1
                 );
                 config_menu.AddTextOption
                 (
@@ -740,7 +751,7 @@ namespace ItsStardewTime
                         Where(mode => !Enum.Parse<TimeSpeedMode>(mode).IsDeprecated()).
                         ToArray(),
                     formatAllowedValue: (s) => Helper.Translation.Get
-                        ($"TimeController.Config.multiplayer-host-time-speed-mode.{s}")
+                        ($"config.multiplayer-host-time-speed-mode.{s}")
                 );
                 config_menu.AddBoolOption
                 (
