@@ -720,8 +720,8 @@ namespace ItsStardewTime
                     mod: ModManifest,
                     name: I18n.Config_MultiplayerHostVoteThreshold_Name,
                     tooltip: I18n.Config_MultiplayerHostVoteThreshold_Desc,
-                    getValue: () => (float)TimeController.Config.VoteThreshold,
-                    setValue: value => TimeController.Config.VoteThreshold = value,
+                    getValue: () => (float)TimeController.Config.VoteThresholdPercent,
+                    setValue: value => TimeController.Config.VoteThresholdPercent = value,
                     formatValue: value => value.ToString("P0"),
                     min: 0,
                     max: 1
