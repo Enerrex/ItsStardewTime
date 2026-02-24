@@ -219,6 +219,7 @@ namespace ItsStardewTime.Framework
 
             void ChangeTickInterval(bool increase)
             {
+                // TODO wtf is going on here with the keys??
                 int change = 1000;
                 {
                     KeyboardState state = Keyboard.GetState();

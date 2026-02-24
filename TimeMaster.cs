@@ -618,8 +618,8 @@ namespace ItsStardewTime
                     mod: ModManifest,
                     name: I18n.Config_ClockDisplayDisplayMinutes_Name,
                     tooltip: I18n.Config_ClockDisplayDisplayMinutes_Desc,
-                    getValue: () => TimeController.Config.DisplayMinutes,
-                    setValue: value => TimeController.Config.DisplayMinutes = value
+                    getValue: () => TimeController.Config.DisplayEveryMinute,
+                    setValue: value => TimeController.Config.DisplayEveryMinute = value
                 );
                 config_menu.AddBoolOption
                 (

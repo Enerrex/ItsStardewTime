@@ -30,7 +30,7 @@ namespace ItsStardewTime
 
 
         // Clock Display
-        public bool DisplayMinutes = true;
+        public bool DisplayEveryMinute = true;
         public bool ShowPauseX = false;
         public bool Use24HourFormat = false;
 
