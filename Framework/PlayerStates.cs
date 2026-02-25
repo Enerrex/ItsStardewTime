@@ -1,4 +1,5 @@
-﻿using StardewModdingAPI;
+﻿using ItsStardewTime.Framework.enums;
+using StardewModdingAPI;
 using StardewValley;
 
 namespace ItsStardewTime.Framework

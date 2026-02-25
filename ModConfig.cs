@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.Serialization;
 using ItsStardewTime.Framework;
+using ItsStardewTime.Framework.enums;
 using StardewModdingAPI;
 using StardewValley;
 

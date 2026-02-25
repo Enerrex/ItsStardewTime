@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using ItsStardewTime.Framework.enums;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewModdingAPI.Utilities;
