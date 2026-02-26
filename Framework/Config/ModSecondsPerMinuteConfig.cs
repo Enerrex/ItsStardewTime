@@ -2,7 +2,7 @@ using System.Runtime.Serialization;
 using StardewValley;
 using StardewValley.Locations;
 
-namespace ItsStardewTime.Framework
+namespace ItsStardewTime.Framework.Config
 {
     /// <summary>The time speed for in-game locations, measured in seconds per 10-game-minutes.</summary>
     internal class ModSecondsPerMinuteConfig

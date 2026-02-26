@@ -1,4 +1,4 @@
-﻿namespace ItsStardewTime.Framework.enums;
+﻿namespace ItsStardewTime.Framework.enums.Extensions;
 
 static class PauseModeMethods
 {

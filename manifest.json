@@ -1,10 +1,9 @@
 {
   "Name": "ItsStardewTime",
   "Author": "Caboose Sage",
-  "Version": "2.0.0",
-  "Description": "Controls for passage of time in Stardew Valley!",
-  "UniqueID": "Cabbose.Sage.ItsStardewTime",
+  "Version": "1.0.0",
+  "Description": "Controls for passage of time in Stardew Valley! Continuation of Time Master.",
+  "UniqueID": "Cabbose.Sage.ItsStardewTime.Master",
   "EntryDll": "ItsStardewTime.dll",
-  "MinimumApiVersion": "3.0.0",
-  "UpdateKeys": []
+  "MinimumApiVersion": "3.0.0"
 }

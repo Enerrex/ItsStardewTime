@@ -34,11 +34,11 @@ namespace ItsStardewTime.Framework
 
         private readonly IManifest _modManifest;
         private readonly IModHelper _helper;
-        
+
         private static ModConfig _config = null!;
 
         internal static ModConfig Config => _config;
-        
+
         private static IMonitor _monitor = null!;
         internal static IMonitor Monitor => _monitor;
 
@@ -380,8 +380,13 @@ namespace ItsStardewTime.Framework
                 }
                 else
                 {
-                    _helper.Multiplayer.SendMessage(Game1.eventUp, Messages.UpdateEventState,
-                        new string[1] { _modManifest.UniqueID }, new long[1] { Game1.MasterPlayer.UniqueMultiplayerID });
+                    _helper.Multiplayer.SendMessage
+                    (
+                        Game1.eventUp,
+                        Messages.UpdateEventState,
+                        [_modManifest.UniqueID],
+                        [Game1.MasterPlayer.UniqueMultiplayerID]
+                    );
                 }
             }
 
@@ -396,7 +401,8 @@ namespace ItsStardewTime.Framework
                 else
                 {
                     _helper.Multiplayer.SendMessage(client_requests_pause, Messages.UpdatePauseRequestState,
-                        new string[1] { _modManifest.UniqueID }, new long[1] { Game1.MasterPlayer.UniqueMultiplayerID });
+                        new string[1] { _modManifest.UniqueID },
+                        new long[1] { Game1.MasterPlayer.UniqueMultiplayerID });
                 }
             }
 
@@ -614,7 +620,8 @@ namespace ItsStardewTime.Framework
             }
             else
             {
-                _helper.Multiplayer.SendMessage(client_side_state.IsVoteForPauseAffirmative, Messages.UpdateVoteForPause,
+                _helper.Multiplayer.SendMessage(client_side_state.IsVoteForPauseAffirmative,
+                    Messages.UpdateVoteForPause,
                     modIDs: new[] { _modManifest.UniqueID },
                     playerIDs: new[] { Game1.MasterPlayer.UniqueMultiplayerID });
             }

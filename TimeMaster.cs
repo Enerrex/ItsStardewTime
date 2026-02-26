@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using HarmonyLib;
 using ItsStardewTime.Framework;
-using ItsStardewTime.Framework.enums;
+using ItsStardewTime.Framework.enums.Extensions;
 using ItsStardewTime.Patches;
 using ItsStardewTime.Patches.TimeDisplayPatches;
 using Microsoft.Xna.Framework;

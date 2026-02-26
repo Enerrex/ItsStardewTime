@@ -1,4 +1,5 @@
-﻿using StardewValley;
+﻿using ItsStardewTime.Framework.enums;
+using StardewValley;
 
 namespace ItsStardewTime.Framework
 {

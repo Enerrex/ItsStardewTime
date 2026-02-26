@@ -1,3 +1,4 @@
+using ItsStardewTime.Framework.enums;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
