@@ -264,7 +264,8 @@ namespace ItsStardewTime.Framework
 
         internal void PollForLocationUpdates()
         {
-            bool late_to_send_updates = _recomputationRequired;
+            // Capture the intial value of _recomputationRequired, it may be updated in function
+            bool recompute_required_capture = _recomputationRequired;
             bool modified_state = false;
             long main_player_id = Game1.MasterPlayer?.UniqueMultiplayerID ?? 0;
             foreach (var (player_id, state) in _playerStates)
@@ -275,7 +276,7 @@ namespace ItsStardewTime.Framework
                     continue;
                 }
 
-                if (Game1.getFarmer(player_id)?.currentLocation is GameLocation location)
+                if (Game1.GetPlayer(player_id)?.currentLocation is GameLocation location)
                 {
                     state.UpdateBasedOnLocation(location, _config);
                     if (state.IsModified)
@@ -287,7 +288,7 @@ namespace ItsStardewTime.Framework
             }
 
             // Only update clients every other poll to avoid sending 3 messages while zoning
-            if (late_to_send_updates && modified_state)
+            if (recompute_required_capture && modified_state)
             {
                 UpdateAllClients();
             }
@@ -496,6 +497,7 @@ namespace ItsStardewTime.Framework
             int prior_tick_interval = _cachedTickInterval;
             bool? prior_manual_freeze = _cachedManualFreeze;
             AutoFreezeReason prior_auto_freeze = _cachedAutoFreeze;
+
             GetSharedTimeSpeedSettings
             (
                 out int tick_interval,
@@ -503,9 +505,12 @@ namespace ItsStardewTime.Framework
                 out AutoFreezeReason auto_freeze
             );
 
-            if (prior_tick_interval != tick_interval ||
+            if
+            (
+                prior_tick_interval != tick_interval ||
                 prior_manual_freeze != manual_freeze ||
-                prior_auto_freeze != auto_freeze)
+                prior_auto_freeze != auto_freeze
+            )
             {
                 if (Context.IsMultiplayer)
                 {
@@ -537,10 +542,10 @@ namespace ItsStardewTime.Framework
             long? playerId = null
         )
         {
-            long[]? player_i_ds = null;
+            long[]? player_ids = null;
             if (playerId != null)
             {
-                player_i_ds = new[] { playerId.Value };
+                player_ids = [playerId.Value];
             }
 
             var message = new SetTimeSpeedCommand
@@ -554,7 +559,7 @@ namespace ItsStardewTime.Framework
                 message,
                 Messages.SetTimeSpeed,
                 new string[1] { _manifest.UniqueID },
-                player_i_ds
+                player_ids
             );
         }
 
@@ -577,9 +582,12 @@ namespace ItsStardewTime.Framework
             (manualFreeze, autoFreeze) = RecomputeFrozenState();
 
             // clear manual unfreeze if it's no longer needed
-            if (_freezeOverride != null &&
+            if
+            (
+                _freezeOverride != null &&
                 autoFreeze == AutoFreezeReason.None &&
-                (manualFreeze == null || manualFreeze == false))
+                (manualFreeze == null || manualFreeze == false)
+            )
             {
                 _monitor.Log($"Clearing _freezeOverride: ({_freezeOverride}). manualFreeze={manualFreeze}");
                 _freezeOverride = null;
@@ -589,9 +597,9 @@ namespace ItsStardewTime.Framework
             _cachedManualFreeze = manualFreeze;
             _cachedAutoFreeze = autoFreeze;
             _recomputationRequired = false;
-            foreach (var s in _playerStates.Values)
+            foreach (var _player_state in _playerStates.Values)
             {
-                s.IsModified = false;
+                _player_state.IsModified = false;
             }
         }
 
