@@ -1,18 +1,14 @@
-﻿using System.Text;
-using HarmonyLib;
+﻿using HarmonyLib;
 using ItsStardewTime.Framework;
+using ItsStardewTime.Framework.Config;
+using ItsStardewTime.Framework.enums;
 using ItsStardewTime.Framework.enums.Extensions;
 using ItsStardewTime.Patches;
-using ItsStardewTime.Patches.TimeDisplayPatches;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json.Linq;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Utilities;
 using StardewValley;
-using StardewValley.Locations;
-using StardewValley.Menus;
 
 namespace ItsStardewTime
 {
@@ -29,6 +25,7 @@ namespace ItsStardewTime
         {
             try
             {
+                ModConfig config = ConfigLoader.LoadOrResetConfig(helper, Monitor);
                 I18n.Init(helper.Translation);
                 _timeSpeeds = new(() => new(helper, Monitor));
                 TimeController = new
@@ -36,7 +33,7 @@ namespace ItsStardewTime
                     helper,
                     Monitor,
                     ModManifest,
-                    helper.ReadConfig<ModConfig>()
+                    config
                 );
 
                 TimeSpeed.FrozenTick += (s, e) =>
@@ -957,11 +954,7 @@ namespace ItsStardewTime
                 Monitor.Log($"Failed to serialize merged config for {modInfo.Manifest.Name}.", LogLevel.Error);
                 return null;
             }
-
-#pragma warning disable CS0612 // Type or member is obsolete
-            merged_config.Keys.VoteForPause = new(merged_config.VotePauseHotkey);
-#pragma warning restore CS0612 // Type or member is obsolete
-
+            
             return merged_config;
         }
     }

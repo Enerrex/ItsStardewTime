@@ -1,4 +1,4 @@
-﻿namespace ItsStardewTime.Framework
+﻿namespace ItsStardewTime.Framework.enums
 {
     public enum PauseMode
     {
