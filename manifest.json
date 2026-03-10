@@ -3,7 +3,7 @@
   "Author": "Caboose Sage",
   "Version": "1.0.0",
   "Description": "Controls for passage of time in Stardew Valley! Continuation of Time Master.",
-  "UniqueID": "Cabbose.Sage.ItsStardewTime.Master",
+  "UniqueID": "Cabbose.Sage.TimeMaster.ItsStardewTime",
   "EntryDll": "ItsStardewTime.dll",
   "MinimumApiVersion": "3.0.0"
 }
