@@ -15,8 +15,20 @@ internal class TimeOfDayStringPatches
         harmony.Patch
         (
             original: AccessTools.Method(typeof(Game1), nameof(Game1.getTimeOfDayString)),
+            prefix: new HarmonyMethod(typeof(TimeOfDayStringPatches), nameof(GetTimeOfDayString_Prefix)),
             postfix: new HarmonyMethod(typeof(TimeOfDayStringPatches), nameof(GetTimeOfDayString_Postfix))
         );
+    }
+    
+    internal static void GetTimeOfDayString_Prefix(ref int time)
+    {
+        if (!TimeController.Config.DisplayEveryMinute)
+        {
+            int hours = time / 100;
+            int minutes = time % 100;
+            minutes = (minutes / 10) * 10;
+            time = (hours * 100) + minutes;
+        }
     }
 
     /// <summary>
