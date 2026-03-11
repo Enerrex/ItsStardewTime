@@ -32,7 +32,7 @@ namespace ItsStardewTime.Framework
         /// <summary>The percentage of the <see cref="CurrentDefaultTickInterval"/> that's elapsed since the last tick.</summary>
         public double TickProgress
         {
-            get => (double)TickProgressBackingStore / CurrentDefaultTickInterval;
+            get => TickProgressBackingStore / CurrentDefaultTickInterval;
             set => TickProgressBackingStore = value * CurrentDefaultTickInterval;
         }
 

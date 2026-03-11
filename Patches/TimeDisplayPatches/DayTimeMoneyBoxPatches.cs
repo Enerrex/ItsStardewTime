@@ -20,12 +20,13 @@ namespace ItsStardewTime.Patches.TimeDisplayPatches
                 (
                     typeof(DayTimeMoneyBox),
                     nameof(DayTimeMoneyBox.draw),
-                    new[] { typeof(SpriteBatch) }
+                    [typeof(SpriteBatch)]
                 ),
                 postfix: new HarmonyMethod(typeof(DayTimeMoneyBoxPatches), nameof(Draw_Postfix))
             );
         }
 
+        // ReSharper disable once InconsistentNaming
         internal static void Draw_Postfix(DayTimeMoneyBox __instance, SpriteBatch b)
         {
             try
@@ -55,7 +56,8 @@ namespace ItsStardewTime.Patches.TimeDisplayPatches
                 // We're letting the original method run to determine value and display quests/money,
                 // but we want to overwrite the time display. This means we have to re-render the time, date,
                 // weather, and season portions of the box.
-                // But oh isn't it a waste to redraw the box, you ask? O(1) = O(2) in the grand scheme of things.
+                // TODO: A more complicated but "safer" method of handling this would be to extract a sprite representing
+                // TODO: ONLY the portion of the box where the time goes, and redraw the background there
                 b.Draw
                 (
                     Game1.mouseCursors,

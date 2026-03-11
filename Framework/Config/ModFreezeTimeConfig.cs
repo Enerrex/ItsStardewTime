@@ -2,7 +2,7 @@ using System.Runtime.Serialization;
 using StardewValley;
 using StardewValley.Locations;
 
-namespace ItsStardewTime.Framework
+namespace ItsStardewTime.Framework.Config
 {
     /// <summary>The mod configuration for where or when time should be frozen.</summary>
     internal class ModFreezeTimeConfig

@@ -1,4 +1,4 @@
-﻿namespace ItsStardewTime.Framework
+﻿namespace ItsStardewTime.Framework.enums
 {
     public enum PauseMode
     {
@@ -10,13 +10,5 @@
         Majority,
 
         Auto, // Deprecated name. Renamed to Fair but keeping around so that old configs don't break
-    }
-
-    static class PauseModeMethods
-    {
-        public static bool IsDeprecated(this PauseMode value)
-        {
-            return value == PauseMode.Auto;
-        }
     }
 }

@@ -1,6 +1,9 @@
-﻿using System.Reflection;
+﻿    using System.Reflection;
 using System.Runtime.Serialization;
 using ItsStardewTime.Framework;
+using ItsStardewTime.Framework.Config;
+using ItsStardewTime.Framework.enums;
+using ItsStardewTime.Framework.enums.Extensions;
 using StardewModdingAPI;
 using StardewValley;
 
@@ -30,8 +33,8 @@ namespace ItsStardewTime
 
 
         // Clock Display
-        public bool DisplayMinutes = true;
-        public bool ShowPauseX = false;
+        public bool DisplayEveryMinute = true;
+        public bool ShowPauseX = true;
         public bool Use24HourFormat = false;
 
 
@@ -66,8 +69,6 @@ namespace ItsStardewTime
 
         public bool ShouldMergePauseInMultiplayerConfigOnNextRun = true;
         public bool ShouldMergeTimeSlowConfigOnNextRun = true;
-
-        [Obsolete] public SButton VotePauseHotkey = SButton.None;
 
         /*********
          ** Public methods

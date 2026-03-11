@@ -1,59 +1,39 @@
 using ItsStardewTime.Framework;
 using StardewValley;
 
-namespace ItsStardewTime.Patches.ClockHelper;
+namespace ItsStardewTime.Patches.TimeDisplayPatches.ClockHelper;
 
 public class Hours
 {
     public static void Handle(int time, ref string timeString)
     {
-        if (!TimeController.Config.Use24HourFormat) return;
-        // No hours needed for french
-        if (LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.fr)
-        {
+        if (!TimeController.Config.Use24HourFormat)
             return;
-        }
         
-        // Hours as seen on a 24 hour clock
-        int hours = time / 100 % 24;
-        // Hours as seen on a 12 hour clock
-        int hours_12hour = hours % 12;
+        if (LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.fr)
+            return;
 
-        bool has_leading_zero = true;
-        switch (LocalizedContentManager.CurrentLanguageCode)
-        {
-            
-            case LocalizedContentManager.LanguageCode.ja:
-            case LocalizedContentManager.LanguageCode.zh:
-                has_leading_zero = false;
-                break;
-            case LocalizedContentManager.LanguageCode.ru:
-            case LocalizedContentManager.LanguageCode.pt:
-            case LocalizedContentManager.LanguageCode.es:
-            case LocalizedContentManager.LanguageCode.de:
-            case LocalizedContentManager.LanguageCode.th:
-            case LocalizedContentManager.LanguageCode.tr:
-            case LocalizedContentManager.LanguageCode.hu:
-            default:
-                break;
-        }
+        int colon = timeString.IndexOf(':');
+        if (colon <= 0)
+            return; // can't find hour token
 
-        // Determine if the 12-hour formatted hours are less than 10, excluding 0 (midnight and noon)
-        // We are removing the original 12-hour hours digits from the string, and replacing them with
-        // the 24-hour hours digits.
-        var is_single_digit = (!has_leading_zero) && hours_12hour < 10 && hours_12hour != 0;
+        // Identify hour token as the contiguous digits immediately preceding ':'
+        int end = colon - 1;
+        int start = end;
+        while (start >= 0 && char.IsDigit(timeString[start]))
+            start--;
+        start++; // move back onto the first digit
 
-        // Find the start index of the hours portion of the time string
-        // Subtract 2 from the position of the colon, or 1 if it's a single digit hour
-        var start_index = timeString.IndexOf(':') - 2;
-        if (is_single_digit)
-        {
-            start_index++;
-        }
+        int len = (end - start) + 1;
+        if (len <= 0)
+            return;
 
-        has_leading_zero = has_leading_zero && is_single_digit;
-        // Remove the original hours digits and insert the new ones
-        timeString = timeString.Remove(start_index, is_single_digit ? 1 : 2);
-        timeString = timeString.Insert(start_index, $"""{(has_leading_zero ? "0": "")}{hours}""");
+        int hours24 = (time / 100) % 24;
+
+        // Preserve padding convention already present in the string.
+        // If it was "06:xx", keep 2-digit. If it was "6:xx", keep 1-digit.
+        string replacement = len >= 2 ? hours24.ToString("D2") : hours24.ToString();
+
+        timeString = timeString.Remove(start, len).Insert(start, replacement);
     }
 }
