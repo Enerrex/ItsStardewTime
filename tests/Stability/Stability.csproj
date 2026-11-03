@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Framework/PlayerStates.cs" Link="Production/PlayerStates.cs" />
+    <Compile Include="../../Framework/Config/ModConfig.cs" Link="Production/ModConfig.cs" />
+    <Compile Include="../../Framework/TimeSpeed.cs" Link="Production/TimeSpeed.cs" />
+    <Compile Include="../../Framework/TimeHelper.cs" Link="Production/TimeHelper.cs" />
+    <Compile Include="../../Framework/TickProgressChangedEventArgs.cs" Link="Production/TickProgressChangedEventArgs.cs" />
+    <Compile Include="../../Framework/SetTimeSpeedCommand.cs" Link="Production/SetTimeSpeedCommand.cs" />
+    <Compile Include="../../Framework/TimeSpeedMode.cs" Link="Production/TimeSpeedMode.cs" />
+    <Compile Include="../../Framework/enums/**/*.cs" Link="Production/enums/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../../Framework/notification/Messages.cs" Link="Production/Messages.cs" />
+  </ItemGroup>
+</Project>

@@ -27,7 +27,7 @@ namespace ItsStardewTime.Framework
         ** Accessors
         *********/
         /// <summary>The game's default tick interval in milliseconds for the current location.</summary>
-        public static double CurrentDefaultTickInterval => Game1.realMilliSecondsPerGameTenMinutes + (Game1.MasterPlayer.currentLocation?.ExtraMillisecondsPerInGameMinute ?? 0);
+        public static double CurrentDefaultTickInterval => Game1.realMilliSecondsPerGameTenMinutes + (Game1.MasterPlayer?.currentLocation?.ExtraMillisecondsPerInGameMinute ?? 0);
 
         /// <summary>The percentage of the <see cref="CurrentDefaultTickInterval"/> that's elapsed since the last tick.</summary>
         public double TickProgress
@@ -95,6 +95,14 @@ namespace ItsStardewTime.Framework
         {
             TickProgress = tickProgress;
             _previousProgress = tickProgress;
+        }
+
+        internal void Reset()
+        {
+            _tickProgressBackingStore = 0;
+            _previousProgress = 0;
+            _lastGameTime = Game1.timeOfDay;
+            _lastGameTimeInterval = 0;
         }
     }
 }

@@ -14,6 +14,13 @@ namespace ItsStardewTime.Framework
             ManualFreeze == true
             || AutoFreeze != AutoFreezeReason.None && ManualFreeze != false;
 
+        internal bool ShouldSyncProgress(int localTimeOfDay, double localProgress)
+        {
+            // Progress is relative to a particular ten-minute interval. Let world sync
+            // reconcile differing clocks rather than applying progress to the wrong one.
+            return localTimeOfDay == TimeOfDay && localProgress < TickProgress;
+        }
+
         // Required for json deserialization
         public SetTimeSpeedCommand()
         {

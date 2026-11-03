@@ -13,7 +13,7 @@ ItsStardewTime replaces and enhances features found in older mods like `PauseInM
 
 ## Requirements
 - [Stardew Valley](https://www.stardewvalley.net/)
-- [SMAPI](https://smapi.io/) (Stardew Modding API) 3.0.0 or higher
+- [SMAPI](https://smapi.io/) (Stardew Modding API) 4.5.0 or higher
 
 ## Setup
 1.  **Install SMAPI**: Follow the [official instructions](https://smapi.io/#install).
@@ -49,8 +49,9 @@ This mod is built using .NET 6.0 and SMAPI's build config.
 - `TimeMaster.cs`: Main entry point for the mod.
 
 ### Scripts & Build
-- **Build**: Use `dotnet build` or your preferred IDE (Rider/Visual Studio).
-- **Tests**: No automated test suite currently implemented. TODO: Add unit tests for time calculation logic.
+- **Build without deployment**: `dotnet build ItsStardewTime.csproj -p:EnableModDeploy=false -p:EnableModZip=false`.
+- **Regression tests**: `dotnet run --project tests/Stability/Stability.csproj`. This dependency-free runner compiles production logic against headless game/SMAPI boundary doubles.
+- **In-game verification and investigation notes**: [Stability verification](docs/stability-verification.md).
 
 ## License
 TODO: Add license information (e.g., MIT, GPL).
