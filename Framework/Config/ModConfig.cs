@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Globalization;
 using System.Runtime.Serialization;
 using ItsStardewTime.Framework.enums;
 using ItsStardewTime.Framework.enums.Extensions;
@@ -135,7 +136,18 @@ namespace ItsStardewTime.Framework.Config
             double threshold = double.IsFinite(VoteThresholdPercent)
                 ? Math.Clamp(VoteThresholdPercent, 0, 1)
                 : 1;
-            return Math.Max(1, Math.Ceiling(threshold * playerCount));
+            // GMCM supplies floats, including in configs saved before this calculation changed.
+            // Use its shortest round-trip decimal without rounding higher-precision config values.
+            float sliderValue = (float)threshold;
+            if (threshold == sliderValue)
+            {
+                string fraction = sliderValue.ToString("R", CultureInfo.InvariantCulture);
+                threshold = double.Parse(fraction, CultureInfo.InvariantCulture);
+            }
+
+            int wholeVotes = (int)Math.Floor(threshold * playerCount);
+            bool needsAnotherVote = (double)wholeVotes / playerCount < threshold;
+            return Math.Max(1, needsAnotherVote ? wholeVotes + 1 : wholeVotes);
         }
 
         /*********

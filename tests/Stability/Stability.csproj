@@ -7,6 +7,7 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../Framework/BuffDurationLocks.cs" Link="Production/BuffDurationLocks.cs" />
     <Compile Include="../../Framework/PlayerStates.cs" Link="Production/PlayerStates.cs" />
     <Compile Include="../../Framework/Config/ModConfig.cs" Link="Production/ModConfig.cs" />
     <Compile Include="../../Framework/TimeSpeed.cs" Link="Production/TimeSpeed.cs" />

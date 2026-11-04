@@ -36,6 +36,12 @@ namespace ItsStardewTime.Framework
             set => TickProgressBackingStore = value * CurrentDefaultTickInterval;
         }
 
+        // A settings message can be processed before Update observes a native clock boundary.
+        internal double CurrentIntervalProgress => HasNativeClockChanged ? 0 : TickProgress;
+
+        private bool HasNativeClockChanged =>
+            Game1.timeOfDay != _lastGameTime || (_useGameTimeInterval && Game1.gameTimeInterval < _lastGameTimeInterval);
+
         private double TickProgressBackingStore
         {
             get
@@ -64,10 +70,9 @@ namespace ItsStardewTime.Framework
         /// <summary>Update the time tracking.</summary>
         public void Update()
         {
-            int time = Game1.timeOfDay;
-            if (time != _lastGameTime || (_useGameTimeInterval ? Game1.gameTimeInterval < _lastGameTimeInterval : TickProgress >= 1.0))
+            if (HasNativeClockChanged || (!_useGameTimeInterval && TickProgress >= 1.0))
             {
-                _lastGameTime = time;
+                _lastGameTime = Game1.timeOfDay;
                 _tickProgressBackingStore = 0;
             }
 
@@ -95,6 +100,8 @@ namespace ItsStardewTime.Framework
         {
             TickProgress = tickProgress;
             _previousProgress = tickProgress;
+            _lastGameTime = Game1.timeOfDay;
+            _lastGameTimeInterval = Game1.gameTimeInterval;
         }
 
         internal void Reset()

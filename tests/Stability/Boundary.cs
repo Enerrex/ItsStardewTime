@@ -6,6 +6,11 @@ using StardewModdingAPI;
 
 namespace StardewValley
 {
+    public class Buff
+    {
+        public int millisecondsDuration;
+    }
+
     public enum Season { Spring }
     public class GameLocation
     {

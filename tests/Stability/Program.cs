@@ -12,9 +12,11 @@ Run("Fair intervals, repeated messages, tick zero and daily reset", Accounting);
 Run("Fair selection after completed pauses and daily reset", FairSelection);
 Run("host location settings and deferred polling", Locations);
 Run("unchanged join and reconnect snapshots", Joining);
+Run("departing peer preserves the active host", PeerDeparture);
 Run("session cache and override reset", Sessions);
 Run("manual unfreeze precedence and reset", Overrides);
 Run("clock progress only within the same interval", ClockSync);
+Run("timed buffs acquired during a freeze", BuffProtection);
 Console.WriteLine($"Passed {passed} regression groups.");
 
 void Run(string name, Action test)
@@ -89,6 +91,12 @@ static void Thresholds()
     Equal(1d, config.GetVoteThresholdCount(4));
     config.VoteThresholdPercent = 0.51;
     Equal(3d, config.GetVoteThresholdCount(4));
+    config.VoteThresholdPercent = 0.60f;
+    Equal(3d, config.GetVoteThresholdCount(5));
+    config.VoteThresholdPercent = 0.675f;
+    Equal(27d, config.GetVoteThresholdCount(40));
+    config.VoteThresholdPercent = Math.BitIncrement(0.6);
+    Equal(4d, config.GetVoteThresholdCount(5));
     config.VoteThresholdPercent = double.NaN;
     Equal(4d, config.GetVoteThresholdCount(4));
     config.VoteThresholdPercent = -1;
@@ -232,6 +240,21 @@ static void Joining()
     }
 }
 
+static void PeerDeparture()
+{
+    var (states, config, _) = Setup();
+    config.PauseMode = PauseMode.Any;
+    states.Add(2);
+    states.UpdatePauseState(2, true);
+    states.SetFreezeOverride(true);
+    states.Remove(2);
+    Equal(true, Frozen(states));
+    states.SetFreezeOverride(null);
+    Equal(false, Frozen(states));
+    states.UpdateTimeSpeedSettings(1, tickInterval: 9200);
+    Equal(9200, TimeMaster.TimeSpeed.TickInterval);
+}
+
 static void Sessions()
 {
     var (states, _, _) = Setup();
@@ -272,11 +295,67 @@ static void Overrides()
 
 static void ClockSync()
 {
-    SetTimeSpeedCommand command = new() { TimeOfDay = 700, TickProgress = 0.8 };
-    Equal(true, command.ShouldSyncProgress(700, 0.2));
-    Equal(false, command.ShouldSyncProgress(700, 0.9));
-    Equal(false, command.ShouldSyncProgress(650, 0.2));
-    Equal(false, command.ShouldSyncProgress(710, 0.2));
-    command.TimeOfDay = 2400;
-    Equal(false, command.ShouldSyncProgress(2350, 0.2));
+    Setup();
+    Game1.timeOfDay = 2350;
+    TimeHelper sender = TimeMaster.TimeSpeed.TimeHelper;
+    sender.SetTime(0.94);
+    SetTimeSpeedCommand Snapshot() => new(
+        7000,
+        null,
+        AutoFreezeReason.None
+    );
+    SetTimeSpeedCommand prior = Snapshot();
+    Equal(0.94, prior.TickProgress);
+    Game1.timeOfDay = 2400;
+    SetTimeSpeedCommand boundary = Snapshot();
+    Equal(2400, boundary.TimeOfDay);
+    Equal(0d, boundary.TickProgress);
+    sender.SetTime(0.75);
+    SetTimeSpeedCommand current = Snapshot();
+
+    StardewModdingAPI.Context.IsMainPlayer = false;
+    try
+    {
+        Game1.timeOfDay = 2350;
+        TimeHelper receiver = new(useGameTimeInterval: true);
+        receiver.SetTime(0.90);
+        current.ApplyProgress(receiver);
+        Equal(0.90, receiver.TickProgress);
+        Game1.timeOfDay = 2400;
+        prior.ApplyProgress(receiver);
+        Equal(0d, receiver.CurrentIntervalProgress);
+        current.ApplyProgress(receiver);
+        Equal(0.75, receiver.TickProgress);
+        receiver.Update();
+        Equal(true, receiver.TickProgress >= 0.75 && receiver.TickProgress < 0.76);
+        double afterUpdate = receiver.TickProgress;
+        current.ApplyProgress(receiver);
+        Equal(afterUpdate, receiver.TickProgress);
+    }
+    finally
+    {
+        StardewModdingAPI.Context.IsMainPlayer = true;
+    }
+}
+
+static void BuffProtection()
+{
+    BuffDurationLocks locks = new();
+    Buff first = new() { millisecondsDuration = 900 };
+    Buff acquired = new() { millisecondsDuration = 500 };
+    locks.Protect(first);
+    first.millisecondsDuration -= 16;
+    locks.Protect(first);
+    locks.Protect(acquired);
+    acquired.millisecondsDuration -= 16;
+    locks.Protect(acquired);
+    Equal(900, first.millisecondsDuration);
+    Equal(500, acquired.millisecondsDuration);
+    acquired.millisecondsDuration = -2;
+    locks.Protect(acquired);
+    Equal(-2, acquired.millisecondsDuration);
+    locks.Clear();
+    first.millisecondsDuration = 200;
+    locks.Protect(first);
+    Equal(200, first.millisecondsDuration);
 }

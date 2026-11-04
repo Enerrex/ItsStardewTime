@@ -12,8 +12,8 @@ dotnet build ItsStardewTime.csproj -p:EnableModDeploy=false -p:EnableModZip=fals
 dotnet run --project tests/Stability/Stability.csproj
 ```
 
-The console runner exits unsuccessfully on an assertion failure. Its nine groups
-compile the production PlayerStates, ModConfig, TimeSpeed, TimeHelper and settings
+The console runner exits unsuccessfully on an assertion failure. Its eleven groups
+compile the production PlayerStates, ModConfig, TimeSpeed, TimeHelper, buff duration locks and settings
 message code. Boundary doubles supply game state, configuration location lookup,
 logging, notifications and message transport; they do not reimplement the tested
 algorithms. The private player counter is exercised through reflection to avoid
@@ -72,7 +72,23 @@ used Mono.Cecil to read method instructions without running the game.
   TimeSpeed instances or duplicating their event subscriptions.
 - Progress belongs to its TimeOfDay interval. A settings message for another
   interval now leaves progress alone until native world synchronization catches up.
-  Within the same interval it only advances the local clock, preserving existing UX.
+  Snapshots taken before the helper observes a native boundary report zero progress
+  for the new interval. A farmhand accepting newer progress records the interval
+  immediately. The regression constructs a packet at midnight and advances the
+  receiving helper through its next update.
+- On a normal secondary-screen exit, SMAPI's `SGame.CleanupReturningToTitle`
+  enters the ReturningToTitle stage. The base game's `Game1.CleanupReturningToTitle`
+  queues only that instance for removal (IL_004e–0054). `GameRunner.Update` removes
+  it after updating the instances in that frame (IL_01f7–023e). SMAPI raises
+  `ReturnedToTitle` on a subsequent update observing the unloaded stage, which the
+  removed instance doesn't receive. The host's peer-disconnect handler removes
+  the departing player. A regression exercises that removal with an active host
+  override and checks that the host can still change its location settings.
+  In split-screen, also quit just the farmhand while the host stays in the save,
+  then reconnect and repeat. This sequence still needs live verification.
+- Voting tests cover the float supplied by GMCM for 60% with five players and
+  a hand-edited double just above the same threshold. Buff tests acquire a second
+  timed buff during a freeze and check its duration on the next update.
 
 Pause/event detection, immediate unfreeze cleanup, health protection and buff
 restoration run every update. NPC/animal/monster movement maintenance runs on a

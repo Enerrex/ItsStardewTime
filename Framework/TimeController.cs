@@ -22,7 +22,7 @@ namespace ItsStardewTime.Framework
             internal int HealthLock = -100;
             internal int FoodDuration = -100;
             internal int DrinkDuration = -100;
-            internal readonly Dictionary<Buff, int> OtherBuffsDurations = new();
+            internal readonly BuffDurationLocks OtherBuffsDurations = new();
         }
 
         // Host managed
@@ -322,10 +322,7 @@ namespace ItsStardewTime.Framework
 
                         // Only advance progress within the same ten-minute interval. Native world sync
                         // handles differing TimeOfDay values; never rewind progress in a matching interval.
-                        if (command.ShouldSyncProgress(Game1.timeOfDay, TimeSpeed.TimeHelper.TickProgress))
-                        {
-                            TimeSpeed.TimeHelper.SetTime(command.TickProgress);
-                        }
+                        command.ApplyProgress(TimeSpeed.TimeHelper);
 
                         break;
 
@@ -570,8 +567,6 @@ namespace ItsStardewTime.Framework
                 Buff? food_buff = buffs.FirstOrDefault(b => b.source == "food");
                 // find drink buff
                 Buff? drink_buff = buffs.FirstOrDefault(b => b.source == "drink");
-                // find other buffs
-                List<Buff> other_buffs = buffs.Where(b => b.source != "food" && b.source != "drink").ToList();
 
                 if (food_buff != null)
                 {
@@ -597,27 +592,11 @@ namespace ItsStardewTime.Framework
                     }
                 }
 
-                if (other_buffs.Count > 0)
+                foreach (Buff _buff in buffs)
                 {
-                    if (client_side_state.OtherBuffsDurations.Count == 0)
+                    if (_buff.source != "food" && _buff.source != "drink")
                     {
-                        foreach (Buff buff in other_buffs)
-                        {
-                            if (buff.millisecondsDuration > 0)
-                            {
-                                client_side_state.OtherBuffsDurations[buff] = buff.millisecondsDuration;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (Buff buff in other_buffs)
-                        {
-                            if (client_side_state.OtherBuffsDurations.TryGetValue(buff, out int duration))
-                            {
-                                buff.millisecondsDuration = duration;
-                            }
-                        }
+                        client_side_state.OtherBuffsDurations.Protect(_buff);
                     }
                 }
 
