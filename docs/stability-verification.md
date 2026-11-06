@@ -1,9 +1,16 @@
 # Stability verification
 
-Automated checks passed; the live-game checks below have **not** been performed.
-Run the same build on the host and farmhands and collect SMAPI debug logs for any
-failure. Record pause mode, vote threshold, RelativeTimeSpeed, location freeze
-settings, player count, and the final logged pause reason.
+All eleven automated regression groups passed. The maintainer tested the 1.0.3
+Rider build in single-player, traveling between locations, talking to villagers,
+opening and closing menus, and mounting and dismounting. Time behaved as expected
+during that session, and the maintainer observed no persistent pause.
+
+Live remote host/farmhand and split-screen gameplay remain unverified. The matrix
+below includes follow-up checks, including a targeted reproduction at a 0% vote
+threshold. For multiplayer testing, run the same build on the host and farmhands
+and collect SMAPI debug logs for any failure. Record pause mode, vote threshold,
+RelativeTimeSpeed, location freeze settings, player count, and the final logged
+pause reason.
 
 ## Automated checks
 
