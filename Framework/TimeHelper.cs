@@ -27,7 +27,7 @@ namespace ItsStardewTime.Framework
         ** Accessors
         *********/
         /// <summary>The game's default tick interval in milliseconds for the current location.</summary>
-        public static double CurrentDefaultTickInterval => Game1.realMilliSecondsPerGameTenMinutes + (Game1.MasterPlayer.currentLocation?.ExtraMillisecondsPerInGameMinute ?? 0);
+        public static double CurrentDefaultTickInterval => Game1.realMilliSecondsPerGameTenMinutes + (Game1.MasterPlayer?.currentLocation?.ExtraMillisecondsPerInGameMinute ?? 0);
 
         /// <summary>The percentage of the <see cref="CurrentDefaultTickInterval"/> that's elapsed since the last tick.</summary>
         public double TickProgress
@@ -35,6 +35,12 @@ namespace ItsStardewTime.Framework
             get => TickProgressBackingStore / CurrentDefaultTickInterval;
             set => TickProgressBackingStore = value * CurrentDefaultTickInterval;
         }
+
+        // A settings message can be processed before Update observes a native clock boundary.
+        internal double CurrentIntervalProgress => HasNativeClockChanged ? 0 : TickProgress;
+
+        private bool HasNativeClockChanged =>
+            Game1.timeOfDay != _lastGameTime || (_useGameTimeInterval && Game1.gameTimeInterval < _lastGameTimeInterval);
 
         private double TickProgressBackingStore
         {
@@ -64,10 +70,9 @@ namespace ItsStardewTime.Framework
         /// <summary>Update the time tracking.</summary>
         public void Update()
         {
-            int time = Game1.timeOfDay;
-            if (time != _lastGameTime || (_useGameTimeInterval ? Game1.gameTimeInterval < _lastGameTimeInterval : TickProgress >= 1.0))
+            if (HasNativeClockChanged || (!_useGameTimeInterval && TickProgress >= 1.0))
             {
-                _lastGameTime = time;
+                _lastGameTime = Game1.timeOfDay;
                 _tickProgressBackingStore = 0;
             }
 
@@ -95,6 +100,16 @@ namespace ItsStardewTime.Framework
         {
             TickProgress = tickProgress;
             _previousProgress = tickProgress;
+            _lastGameTime = Game1.timeOfDay;
+            _lastGameTimeInterval = Game1.gameTimeInterval;
+        }
+
+        internal void Reset()
+        {
+            _tickProgressBackingStore = 0;
+            _previousProgress = 0;
+            _lastGameTime = Game1.timeOfDay;
+            _lastGameTimeInterval = 0;
         }
     }
 }

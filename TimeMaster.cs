@@ -21,6 +21,14 @@ namespace ItsStardewTime
 
         internal static TimeSpeed TimeSpeed => _timeSpeeds.Value;
 
+        internal static void ResetTimeSpeeds()
+        {
+            foreach (var _entry in _timeSpeeds.GetActiveValues())
+            {
+                _entry.Value.Reset();
+            }
+        }
+
         public override void Entry(IModHelper helper)
         {
             try

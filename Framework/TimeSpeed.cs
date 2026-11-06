@@ -28,10 +28,19 @@ namespace ItsStardewTime.Framework
 
         /// <summary>
         /// Whether time should be frozen.
-        /// Freeze time when ManualFreeze is <c>true</c> or AutoFreeze is not <see cref="AutoFreezeReason.None"/>.
-        /// I.e. when a manual freeze is requested or when the game is paused due to automatically detected conditions.
+        /// An explicit manual freeze or unfreeze takes precedence over automatic conditions.
+        /// Without an override, freeze when AutoFreeze is not <see cref="AutoFreezeReason.None"/>.
         /// </summary>
-        internal bool IsTimeFrozen => ManualFreeze || AutoFreeze != AutoFreezeReason.None;
+        internal bool IsTimeFrozen => _manualFreeze ?? AutoFreeze != AutoFreezeReason.None;
+
+        internal void Reset()
+        {
+            _manualFreeze = null;
+            AutoFreeze = AutoFreezeReason.None;
+            TickInterval = Game1.realMilliSecondsPerGameTenMinutes;
+            TimeHelper.Reset();
+            _objectTimeHelper.Reset();
+        }
 
         /// <summary>Backing field for <see cref="TickInterval"/>.</summary>
         private int _tickInterval = Game1.realMilliSecondsPerGameTenMinutes;

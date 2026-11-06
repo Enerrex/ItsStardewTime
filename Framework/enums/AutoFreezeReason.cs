@@ -1,3 +1,5 @@
+using ItsStardewTime.Framework.Config;
+
 namespace ItsStardewTime.Framework.enums
 {
     /// <summary>The reasons for automated time freezes.</summary>

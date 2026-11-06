@@ -1,4 +1,5 @@
-﻿using ItsStardewTime.Framework.enums;
+﻿using ItsStardewTime.Framework.Config;
+using ItsStardewTime.Framework.enums;
 using StardewModdingAPI;
 using StardewValley;
 
@@ -15,6 +16,7 @@ namespace ItsStardewTime.Framework
             private int _tickOfLastPause;
             private int _ticksOfPriorPause;
             private bool _isPaused;
+            private bool _isAccountingPause;
             private AutoFreezeReason _autoFreezeReason = AutoFreezeReason.None;
 
             internal bool IsPaused => _isPaused || _autoFreezeReason != AutoFreezeReason.None;
@@ -29,12 +31,7 @@ namespace ItsStardewTime.Framework
             {
                 get
                 {
-                    if (_tickOfLastPause == 0)
-                    {
-                        return 0;
-                    }
-
-                    if (IsPaused)
+                    if (_isAccountingPause)
                     {
                         return _ticksOfPriorPause + (Game1.ticks - _tickOfLastPause);
                     }
@@ -96,6 +93,7 @@ namespace ItsStardewTime.Framework
                     }
 
                     _autoFreezeReason = value;
+                    UpdatePauseAccounting();
                 }
             }
 
@@ -113,20 +111,29 @@ namespace ItsStardewTime.Framework
                 }
 
                 _isPaused = requestingPause;
-                if (requestingPause)
+                UpdatePauseAccounting();
+            }
+
+            private void UpdatePauseAccounting()
+            {
+                // Count the same combined pause state used by Fair and RelativeTimeSpeed.
+                bool is_paused = IsPaused;
+                if (is_paused && !_isAccountingPause)
                 {
                     _tickOfLastPause = Game1.ticks;
                 }
-                else if (_tickOfLastPause > 0)
+                else if (!is_paused && _isAccountingPause)
                 {
                     _ticksOfPriorPause += Game1.ticks - _tickOfLastPause;
                 }
+
+                _isAccountingPause = is_paused;
             }
 
             internal void DayStarted()
             {
                 _ticksOfPriorPause = 0;
-                if (_isPaused)
+                if (_isAccountingPause)
                 {
                     _tickOfLastPause = Game1.ticks;
                 }
@@ -164,7 +171,7 @@ namespace ItsStardewTime.Framework
 
         internal void Add(long playerId)
         {
-            bool all_votes_are_yes = _playerStates.Values.All(s => s.IsVoteForPauseAffirmative);
+            bool all_votes_are_yes = _playerStates.Count > 0 && _playerStates.Values.All(s => s.IsVoteForPauseAffirmative);
             PlayerState state = new();
             _playerStates.Add(playerId, state);
             var location = Game1.getFarmer(playerId)?.currentLocation;
@@ -221,6 +228,17 @@ namespace ItsStardewTime.Framework
 
             _recomputationRequired = true;
             UpdateAllClients();
+            if (playerId != Game1.MasterPlayer.UniqueMultiplayerID)
+            {
+                // PeerConnected is after approval; send a snapshot even if settings did not change.
+                SendSetTimeSpeedCommand
+                (
+                    _cachedTickInterval,
+                    _cachedManualFreeze,
+                    _cachedAutoFreeze,
+                    playerId
+                );
+            }
         }
 
         internal void Remove(long playerId)
@@ -233,18 +251,19 @@ namespace ItsStardewTime.Framework
         internal void Clear()
         {
             _playerStates.Clear();
-            _recomputationRequired = false;
+            _recomputationRequired = true;
+            _cachedTickInterval = 0;
+            _cachedManualFreeze = null;
+            _cachedAutoFreeze = AutoFreezeReason.None;
+            _freezeOverride = null;
         }
 
         internal void DayStarted()
         {
-            foreach (var state in _playerStates.Values)
+            _recomputationRequired = true;
+            foreach (var _state in _playerStates.Values)
             {
-                state.DayStarted();
-                if (state.IsModified)
-                {
-                    _recomputationRequired = true;
-                }
+                _state.DayStarted();
             }
 
             UpdateAllClients();
@@ -266,7 +285,6 @@ namespace ItsStardewTime.Framework
         {
             // Capture the intial value of _recomputationRequired, it may be updated in function
             bool recompute_required_capture = _recomputationRequired;
-            bool modified_state = false;
             long main_player_id = Game1.MasterPlayer?.UniqueMultiplayerID ?? 0;
             foreach (var (player_id, state) in _playerStates)
             {
@@ -281,14 +299,13 @@ namespace ItsStardewTime.Framework
                     state.UpdateBasedOnLocation(location, _config);
                     if (state.IsModified)
                     {
-                        modified_state = true;
                         _recomputationRequired = true;
                     }
                 }
             }
 
             // Only update clients every other poll to avoid sending 3 messages while zoning
-            if (recompute_required_capture && modified_state)
+            if (recompute_required_capture)
             {
                 UpdateAllClients();
             }
@@ -610,6 +627,11 @@ namespace ItsStardewTime.Framework
 
         private int RecomputeTickInterval()
         {
+            if (_playerStates.Count == 0)
+            {
+                return (int)TimeHelper.CurrentDefaultTickInterval;
+            }
+
             double result;
             switch (_config.TimeSpeedMode)
             {
@@ -660,6 +682,11 @@ namespace ItsStardewTime.Framework
 
         private (bool?, AutoFreezeReason) RecomputeFrozenState()
         {
+            if (_playerStates.Count == 0)
+            {
+                return (null, AutoFreezeReason.None);
+            }
+
             AutoFreezeReason auto_freeze = AutoFreezeReason.None;
             bool pause_vote_succeeded = true;
             bool event_is_active = false;

@@ -1,13 +1,11 @@
-﻿    using System.Reflection;
+﻿using System.Reflection;
+using System.Globalization;
 using System.Runtime.Serialization;
-using ItsStardewTime.Framework;
-using ItsStardewTime.Framework.Config;
 using ItsStardewTime.Framework.enums;
 using ItsStardewTime.Framework.enums.Extensions;
-using StardewModdingAPI;
 using StardewValley;
 
-namespace ItsStardewTime
+namespace ItsStardewTime.Framework.Config
 {
     internal class ModConfig
     {
@@ -119,13 +117,38 @@ namespace ItsStardewTime
 
         public void Update(ModConfig other)
         {
-            foreach (FieldInfo field in typeof(ModConfig).GetFields())
+            foreach (FieldInfo _field in typeof(ModConfig).GetFields())
             {
-                field.SetValue(this, field.GetValue(other));
+                _field.SetValue(this, _field.GetValue(other));
             }
+
+            VoteThresholdPercent = other.VoteThresholdPercent;
         }
 
-        public double GetVoteThresholdCount(int playerCount) => Math.Ceiling(VoteThresholdPercent * playerCount);
+        public double GetVoteThresholdCount(int playerCount)
+        {
+            // No population can pass a vote. Nonfinite percentages fall back to unanimity.
+            if (playerCount <= 0)
+            {
+                return double.PositiveInfinity;
+            }
+
+            double threshold = double.IsFinite(VoteThresholdPercent)
+                ? Math.Clamp(VoteThresholdPercent, 0, 1)
+                : 1;
+            // GMCM supplies floats, including in configs saved before this calculation changed.
+            // Use its shortest round-trip decimal without rounding higher-precision config values.
+            float sliderValue = (float)threshold;
+            if (threshold == sliderValue)
+            {
+                string fraction = sliderValue.ToString("R", CultureInfo.InvariantCulture);
+                threshold = double.Parse(fraction, CultureInfo.InvariantCulture);
+            }
+
+            int wholeVotes = (int)Math.Floor(threshold * playerCount);
+            bool needsAnotherVote = (double)wholeVotes / playerCount < threshold;
+            return Math.Max(1, needsAnotherVote ? wholeVotes + 1 : wholeVotes);
+        }
 
         /*********
          ** Private methods

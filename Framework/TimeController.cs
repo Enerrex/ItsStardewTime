@@ -1,4 +1,5 @@
-﻿using ItsStardewTime.Framework.enums;
+using ItsStardewTime.Framework.Config;
+using ItsStardewTime.Framework.enums;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
@@ -21,7 +22,7 @@ namespace ItsStardewTime.Framework
             internal int HealthLock = -100;
             internal int FoodDuration = -100;
             internal int DrinkDuration = -100;
-            internal readonly Dictionary<Buff, int> OtherBuffsDurations = new();
+            internal readonly BuffDurationLocks OtherBuffsDurations = new();
         }
 
         // Host managed
@@ -89,7 +90,7 @@ namespace ItsStardewTime.Framework
                 int tick_interval = GetTickInterval(e.NewLocation);
                 AutoFreezeReason auto_freeze = Config.ShouldFreeze(Game1.timeOfDay, e.NewLocation);
                 _playerStates.UpdateTimeSpeedSettings(Game1.player.UniqueMultiplayerID, tickInterval: tick_interval,
-                    autoFreeze: auto_freeze, skipUpdate: true);
+                    autoFreeze: auto_freeze);
                 if (Config.TimeFlowChangeNotifications)
                 {
                     Monitor.Log(
@@ -104,6 +105,14 @@ namespace ItsStardewTime.Framework
             helper.Events.Multiplayer.ModMessageReceived += Multiplayer_ModMessageReceived;
             helper.Events.GameLoop.UpdateTicked += GameLoop_UpdateTicked;
             helper.Events.GameLoop.UpdateTicking += GameLoop_UpdateTicking;
+            helper.Events.GameLoop.ReturnedToTitle += (s, e) =>
+            {
+                _playerStates.Clear();
+                _clientSideState.ResetAllScreens();
+                _monsterLocks.Clear();
+                _shouldAdjustTimeSpeed = true;
+                TimeMaster.ResetTimeSpeeds();
+            };
             helper.Events.GameLoop.SaveLoaded += (s, e) =>
             {
                 if (Context.IsMainPlayer)
@@ -311,13 +320,9 @@ namespace ItsStardewTime.Framework
                             notifyOfMultiplayerUpdates: Config.TimeFlowChangeNotificationsMultiplayer
                         );
 
-                        // We ignore the case where the client clock is slightly behind (timeOfDay is equal and
-                        // tick progess behind) so that the clock waits until the next world state update instead
-                        // of jumping backwards unnecessarily (better UX for when Config.DisplayMinutes is set).
-                        if (TimeSpeed.TimeHelper.TickProgress < command.TickProgress)
-                        {
-                            TimeSpeed.TimeHelper.SetTime(command.TickProgress);
-                        }
+                        // Only advance progress within the same ten-minute interval. Native world sync
+                        // handles differing TimeOfDay values; never rewind progress in a matching interval.
+                        command.ApplyProgress(TimeSpeed.TimeHelper);
 
                         break;
 
@@ -360,11 +365,6 @@ namespace ItsStardewTime.Framework
 
         private void GameLoop_UpdateTicking(object? sender, StardewModdingAPI.Events.UpdateTickingEventArgs e)
         {
-            if (!e.IsMultipleOf(7u))
-            {
-                return;
-            }
-
             if (!Context.IsWorldReady)
             {
                 return;
@@ -390,10 +390,19 @@ namespace ItsStardewTime.Framework
                 }
             }
 
-            bool client_requests_pause = ClientShouldRequestPause();
+            string? client_pause_reason = ClientShouldRequestPauseReason();
+            bool client_requests_pause = client_pause_reason != null;
             if (client_side_state.PauseIsRequested != client_requests_pause)
             {
                 client_side_state.PauseIsRequested = client_requests_pause;
+                if (client_requests_pause)
+                {
+                    Monitor.Log($"Client requested pause. Reason: {client_pause_reason}", LogLevel.Debug);
+                }
+                else
+                {
+                    Monitor.Log("Client unpaused.", LogLevel.Debug);
+                }
                 if (Context.IsMainPlayer)
                 {
                     _playerStates.UpdatePauseState(Game1.player.UniqueMultiplayerID, client_requests_pause);
@@ -409,6 +418,18 @@ namespace ItsStardewTime.Framework
             bool is_time_frozen = TimeSpeed.IsTimeFrozen;
             bool has_frozen_state_changed = is_time_frozen != client_side_state.WasTimeFrozen;
             client_side_state.WasTimeFrozen = is_time_frozen;
+            if (has_frozen_state_changed)
+            {
+                if (is_time_frozen)
+                {
+                    Monitor.Log($"Time is now frozen. AutoFreeze: {TimeSpeed.AutoFreeze}, ManualFreeze: {TimeSpeed.ManualFreeze}", LogLevel.Debug);
+                }
+                else
+                {
+                    Monitor.Log("Time is no longer frozen.", LogLevel.Debug);
+                }
+            }
+
             if (!has_frozen_state_changed && !is_time_frozen)
             {
                 return;
@@ -442,63 +463,68 @@ namespace ItsStardewTime.Framework
                         _playerStates.UpdateAllClients();
                     }
 
-                    foreach (GameLocation location in Game1.locations)
+                    // Movement locks last 250 ms; refresh at the original seven-tick cadence.
+                    // Pause detection, health and buff protection still run every update.
+                    if (has_frozen_state_changed || e.IsMultipleOf(7u))
                     {
-                        if (location == null)
+                        foreach (GameLocation location in Game1.locations)
                         {
-                            continue;
-                        }
-
-                        foreach (NPC character in location.characters)
-                        {
-                            character.movementPause = 250;
-                        }
-                    }
-
-                    if (client_side_state.ShouldLockMonsters)
-                    {
-                        HashSet<GameLocation> farmer_locations = new();
-                        foreach (Farmer f in Game1.getOnlineFarmers())
-                        {
-                            if (f.currentLocation != null)
+                            if (location == null)
                             {
-                                farmer_locations.Add(f.currentLocation);
+                                continue;
+                            }
+
+                            foreach (NPC character in location.characters)
+                            {
+                                character.movementPause = 250;
                             }
                         }
 
-                        foreach (GameLocation location in farmer_locations)
+                        if (client_side_state.ShouldLockMonsters)
                         {
-                            if (location is Farm farm)
+                            HashSet<GameLocation> farmer_locations = new();
+                            foreach (Farmer f in Game1.getOnlineFarmers())
                             {
-                                foreach (FarmAnimal animal2 in farm.getAllFarmAnimals())
+                                if (f.currentLocation != null)
                                 {
-                                    animal2.pauseTimer = 250;
-                                }
-                            }
-                            else if (location is AnimalHouse animal_house)
-                            {
-                                foreach (FarmAnimal animal in animal_house.animals.Values)
-                                {
-                                    animal.pauseTimer = 250;
+                                    farmer_locations.Add(f.currentLocation);
                                 }
                             }
 
-                            foreach (NPC c in location.characters)
+                            foreach (GameLocation location in farmer_locations)
                             {
-                                if (c is Monster monster)
+                                if (location is Farm farm)
                                 {
-                                    monster.invincibleCountdown = 250;
-                                    monster.movementPause = 250;
-                                    if (_monsterLocks.TryGetValue(monster, out var locked_position))
+                                    foreach (FarmAnimal animal2 in farm.getAllFarmAnimals())
                                     {
-                                        if (monster.Position != locked_position)
-                                        {
-                                            monster.Position = locked_position;
-                                        }
+                                        animal2.pauseTimer = 250;
                                     }
-                                    else
+                                }
+                                else if (location is AnimalHouse animal_house)
+                                {
+                                    foreach (FarmAnimal animal in animal_house.animals.Values)
                                     {
-                                        _monsterLocks[monster] = monster.Position;
+                                        animal.pauseTimer = 250;
+                                    }
+                                }
+
+                                foreach (NPC c in location.characters)
+                                {
+                                    if (c is Monster monster)
+                                    {
+                                        monster.invincibleCountdown = 250;
+                                        monster.movementPause = 250;
+                                        if (_monsterLocks.TryGetValue(monster, out var locked_position))
+                                        {
+                                            if (monster.Position != locked_position)
+                                            {
+                                                monster.Position = locked_position;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            _monsterLocks[monster] = monster.Position;
+                                        }
                                     }
                                 }
                             }
@@ -507,7 +533,8 @@ namespace ItsStardewTime.Framework
                 }
                 else
                 {
-                    if (client_side_state.ShouldLockMonsters && Game1.currentLocation != null)
+                    if ((has_frozen_state_changed || e.IsMultipleOf(7u)) &&
+                        client_side_state.ShouldLockMonsters && Game1.currentLocation != null)
                     {
                         if (Game1.currentLocation is Farm farm)
                         {
@@ -540,8 +567,6 @@ namespace ItsStardewTime.Framework
                 Buff? food_buff = buffs.FirstOrDefault(b => b.source == "food");
                 // find drink buff
                 Buff? drink_buff = buffs.FirstOrDefault(b => b.source == "drink");
-                // find other buffs
-                List<Buff> other_buffs = buffs.Where(b => b.source != "food" && b.source != "drink").ToList();
 
                 if (food_buff != null)
                 {
@@ -567,27 +592,11 @@ namespace ItsStardewTime.Framework
                     }
                 }
 
-                if (other_buffs.Count > 0)
+                foreach (Buff _buff in buffs)
                 {
-                    if (client_side_state.OtherBuffsDurations.Count == 0)
+                    if (_buff.source != "food" && _buff.source != "drink")
                     {
-                        foreach (Buff buff in other_buffs)
-                        {
-                            if (buff.millisecondsDuration > 0)
-                            {
-                                client_side_state.OtherBuffsDurations[buff] = buff.millisecondsDuration;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (Buff buff in other_buffs)
-                        {
-                            if (client_side_state.OtherBuffsDurations.TryGetValue(buff, out int duration))
-                            {
-                                buff.millisecondsDuration = duration;
-                            }
-                        }
+                        client_side_state.OtherBuffsDurations.Protect(_buff);
                     }
                 }
 
@@ -627,34 +636,34 @@ namespace ItsStardewTime.Framework
             }
         }
 
-        private static bool ClientShouldRequestPause()
+        private static string? ClientShouldRequestPauseReason()
         {
             if (!Game1.shouldTimePass(true))
             {
-                return true;
+                return "Game1.shouldTimePass(true) is false";
             }
 
             if (Game1.IsMultiplayer && Game1.netWorldState.Value.IsTimePaused)
             {
-                return true;
+                return "Game1.netWorldState.Value.IsTimePaused";
             }
 
             if (Game1.activeClickableMenu is BobberBar)
             {
-                return true;
+                return "Game1.activeClickableMenu is BobberBar";
             }
 
             if (Game1.currentMinigame != null)
             {
-                return true;
+                return "Game1.currentMinigame is active";
             }
 
             if (Game1.eventUp)
             {
-                return true;
+                return "Game1.eventUp";
             }
 
-            return false;
+            return null;
         }
 
         private int GetTickInterval(GameLocation location)
